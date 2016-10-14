@@ -1,9 +1,12 @@
 import java.util.Random;
 
-import org.la4j.Matrix;
-import org.la4j.Vector;
-import org.la4j.matrix.DenseMatrix;
-import org.la4j.matrix.functor.MatrixFunction;
+import NeuralNet.NeuralNet;
+import NeuralNet.Costs.LogisticLoss;
+import NeuralNet.Costs.Loss;
+import NeuralNet.NonLinFuncs.NonLinFunction;
+import NeuralNet.NonLinFuncs.Sigmoid;
+import NeuralNet.Optimizers.GradientDescent;
+import NeuralNet.Optimizers.Optimizer;
 
 /**
  * 
@@ -19,38 +22,35 @@ public class main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
-		double[][] a1 = new double[][]{
-			  { 1, 2, 3 },
-			  { 4, 5, 6 },
-			  { 7, 8, 9 }
-			};
-		double[][] a2 = new double[][]{
-			  { 2, 2, 2 },
-			  { 2, 2, 2 },
-			  { 2, 2, 2 }
-			};	
-		Matrix m1 = DenseMatrix.from2DArray(a1);
-		Matrix m2 = DenseMatrix.from2DArray(a2);
 
-		Vector v1 = Vector.random(3, new Random(500));
+		// initialize
+		
+		int noFeatures = 2;
+		int batchSize = 1;
+		int noLayers = 2;
+		int[] layerDims = { 4, 1 };
+		double trainRate = 0.2;
+		double momentum = 0.0;
+		NonLinFunction nonLinFunction = new Sigmoid();
+		Loss lossFunc = new LogisticLoss();
+		Optimizer optimizer = new GradientDescent();
 		
 		
-//		System.out.println(m1.multiply(m2));
-//		System.out.println(m1.hadamardProduct(m2));
+		NeuralNet nn = new NeuralNet(noFeatures, batchSize, noLayers, layerDims,
+				trainRate, momentum, nonLinFunction, lossFunc, optimizer);
+
+		// training
+		int iter = 1000;
+		int printPer = 10;
 		
-//		System.out.println(m1);
-//		System.out.println(DenseMatrix.random(3, 3, new Random()));
-		System.out.println(v1);
-		v1 = v1.add(v1);
-		System.out.println(v1);
-//		for (int i = 0; i < 3; i++) {
-//			m1.setRow(i, m1.getRow(i).add(v1));
-//		}
-//		System.out.println(m1);
-//		System.out.println(m1.multiply(m2));
-//		System.out.println(m1.multiply(m2).add(m2));
-//		System.out.println(m1.transform(new xsquared()));
+		for ( int i = 0; i < iter; i++ ) {
+			// double loss = nn.runOnePass(X, y);
+			
+			if ( i % printPer == 0 ) {
+				System.out.printf("Loss for iteration %i is %d. \n", i, loss);
+			}
+		}
+		
 	}
 	
 

@@ -18,7 +18,7 @@ public class NeuralNet implements NeuralNetInterface {
 	private int noFeatures;
 	private int batchSize;
 	private int noLayers;	// greater than or equal to 1
-	private int[] layerDimensions;		// last layer should have 1 output for binary classification
+	private int[] layerDimensions;		// last layer is number of outputs and should be number of class
 
 	// Computation parameters
 	private Matrix[] Hhat;
@@ -33,8 +33,7 @@ public class NeuralNet implements NeuralNetInterface {
 	// Functions
 	private MatrixFunction noneLinearity;
 	private MatrixFunction noneLinearityDerivative;
-	private MatrixFunction lossFunction;
-	private MatrixFunction lossFunctionDerivative;
+	private Loss lossFunction;
 	
 	// Optimization
 	private double trainRate;
@@ -51,8 +50,7 @@ public class NeuralNet implements NeuralNetInterface {
 		this.layerDimensions = layerDims;
 		this.noneLinearity = noLinFunc.fnc;
 		this.noneLinearityDerivative = noLinFunc.derivative;
-		this.lossFunction = lossObj.loss;
-		this.lossFunctionDerivative = lossObj.derivative;
+		this.lossFunction = lossObj;
 		this.trainRate = trainRate;
 		this.momentum = momentum;
 		this.optimizer = optimizer;
@@ -125,11 +123,12 @@ public class NeuralNet implements NeuralNetInterface {
 	}
 
 	@Override
-	public void backwardProp() {
+	public void backwardProp(Matrix y) {
 		
 		// prepare last layer
-		del[noLayers-1] = computeLastDel();
-		
+		del[noLayers-1] = lossFunction.computeGradient(H[noLayers - 1], y)
+							.hadamardProduct(Hhat[noLayers - 1].transform(noneLinearityDerivative));
+						
 		// iterate backwards through layers
 		for (int k = noLayers-2; k >= 0; k--) {
 			del[k] = del[k+1].multiply(W[k+1].transpose())
@@ -139,11 +138,15 @@ public class NeuralNet implements NeuralNetInterface {
 	}
 	
 	@Override
-	public double runOnePass(Matrix X, Vector y) {
+	public double runOnePass(Matrix X, Matrix y) {
+		
+		if ( y.columns() != H[noLayers - 1].columns() ) {
+			throw new IllegalArgumentException("Number of outputs doesn't match number of truth classes.");
+		}
 		
 		forwardProp(X);
-		loss = computeLoss();
-		backwardProp();
+		loss = lossFunction.computeLoss(H[noLayers - 1], y);
+		backwardProp(y);
 		computeGradients(X);
 		OptimizationResult result = optimizer.optimize(W, b, dW, db, trainRate, momentum);
 		if (result == null) {
@@ -176,12 +179,11 @@ public class NeuralNet implements NeuralNetInterface {
 		}
 	}
 	
-	private Matrix computeLastDel() {
-		// TODO
-		return null;
+	@Override
+	public Matrix predict(Matrix Xhat) {
+		
+		forwardProp(Xhat);
+		return H[noLayers - 1];
 	}
 	
-	private double computeLoss() {
-		return 0;
-	}
 }
