@@ -32,6 +32,7 @@ public class LogisticLoss extends Loss {
 		}
 		
 		Vector result = truth.getColumn(0).hadamardProduct(prediction.getColumn(0)).transform(new LogisticDerivative());
+		result = result.hadamardProduct(truth.getColumn(0)); // extra times y from derivative
 		return result.toColumnMatrix();
 	}
 }

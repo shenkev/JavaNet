@@ -23,7 +23,7 @@ public class NeuralNet implements NeuralNetInterface {
 	// Computation parameters
 	private Matrix[] Hhat;
 	private Matrix[] H;		// includes the last layer
-	private Matrix[] del;
+	private Matrix del;
 	private Matrix[] W;
 	private Vector[] b;
 	private Matrix[] dW;
@@ -42,8 +42,8 @@ public class NeuralNet implements NeuralNetInterface {
 	
 	public NeuralNet(int noFeatures, int batchSize, int noLayers,
 			int[] layerDims, double trainRate, double momentum, 
-			NonLinFunction noLinFunc, Loss lossObj, Optimizer optimizer) {
-		
+			NonLinFunction noLinFunc, Loss lossObj, Optimizer optimizer, int randSeed) {
+				
 		this.noFeatures = noFeatures;
 		this.batchSize = batchSize;
 		this.noLayers = noLayers;
@@ -55,7 +55,7 @@ public class NeuralNet implements NeuralNetInterface {
 		this.momentum = momentum;
 		this.optimizer = optimizer;
 		
-		Random rand = new Random(800);
+		Random rand = new Random(randSeed);
 
 		// Initialize weight matrix
 		W = new Matrix[this.noLayers];
@@ -82,20 +82,8 @@ public class NeuralNet implements NeuralNetInterface {
 		}
 		
 		// Initialize states
-		H = new Matrix[this.noLayers];
-		for (int i = 0; i < H.length; i++) {
-			H[i] = DenseMatrix.zero(batchSize, layerDimensions[i]);
-		}
-		
+		H = new Matrix[this.noLayers + 1];
 		Hhat = new Matrix[this.noLayers];
-		for (int i = 0; i < Hhat.length; i++) {
-			Hhat[i] = DenseMatrix.zero(batchSize, layerDimensions[i]);
-		}
-		
-		del = new Matrix[this.noLayers];
-		for (int i = 0; i < del.length; i++) {
-			del[i] = DenseMatrix.zero(batchSize, layerDimensions[i]);
-		}
 		
 	}
 
@@ -103,21 +91,16 @@ public class NeuralNet implements NeuralNetInterface {
 	public void forwardProp(Matrix batchData) {
 		
 		// prepare first layer
-		Hhat[0] = batchData.multiply(W[0]);
 		// add bias
-		for (int i = 0; i < batchSize; i++) {
-			Hhat[0].setRow(i, Hhat[0].getRow(i).add(b[0]));
-		}
-		H[0] = Hhat[0].transform(noneLinearity);
 		
 		// iterate through each layer
-		for (int k = 1; k < noLayers; k++) {
-			Hhat[k] = H[k-1].multiply(W[k]);
+		for (int k = 0; k < noLayers; k++) {
+			Hhat[k] = H[k].multiply(W[k]);
 			// add bias
-			for (int i = 0; i < batchSize; i++) {
-				Hhat[k].setRow(i, Hhat[k].getRow(i).add(b[k]));
-			}
-			H[k] = Hhat[k].transform(noneLinearity);
+//			for (int i = 0; i < batchSize; i++) {
+//				Hhat[k].setRow(i, Hhat[k].getRow(i).add(b[k]));
+//			}
+			H[k+1] = Hhat[k].transform(noneLinearity);
 		}
 		
 	}
@@ -126,13 +109,19 @@ public class NeuralNet implements NeuralNetInterface {
 	public void backwardProp(Matrix y) {
 		
 		// prepare last layer
-		del[noLayers-1] = lossFunction.computeGradient(H[noLayers - 1], y)
+		del = lossFunction.computeGradient(H[noLayers], y)
 							.hadamardProduct(Hhat[noLayers - 1].transform(noneLinearityDerivative));
-						
+		
+		// deal with bias
+		dW[noLayers - 1] = H[noLayers-1].transpose().multiply(del);
 		// iterate backwards through layers
 		for (int k = noLayers-2; k >= 0; k--) {
-			del[k] = del[k+1].multiply(W[k+1].transpose())
+			
+			del = del.multiply(W[k+1].transpose())
 					.hadamardProduct(Hhat[k].transform(noneLinearityDerivative));
+			// deal with bias
+			dW[k] = H[k].transpose().multiply(del);
+
 		}
 		
 	}
@@ -140,50 +129,66 @@ public class NeuralNet implements NeuralNetInterface {
 	@Override
 	public double runOnePass(Matrix X, Matrix y) {
 		
-		if ( y.columns() != H[noLayers - 1].columns() ) {
-			throw new IllegalArgumentException("Number of outputs doesn't match number of truth classes.");
+		if ( y.rows() != batchSize ) {
+			throw new IllegalArgumentException("Batch size is not as promised.");
 		}
 		
+		if ( y.columns() != layerDimensions[noLayers - 1] ) {
+			throw new IllegalArgumentException("Number of outputs doesn't match number of truth classes.");
+		}
+				
+		H[0] = X;
 		forwardProp(X);
-		loss = lossFunction.computeLoss(H[noLayers - 1], y);
+		loss = lossFunction.computeLoss(H[noLayers], y);
 		backwardProp(y);
-		computeGradients(X);
 		OptimizationResult result = optimizer.optimize(W, b, dW, db, trainRate, momentum);
+		
 		if (result == null) {
 			System.out.println("Error: called invalid optimization function.");
 		}
+		
 		W = result.newW;
 		b = result.newb;
 		
+//		debugPrint();
 		return loss;
-	}
-
-	@Override
-	public void computeGradients(Matrix batchData) {
-		
-		// gradient for first layer
-		dW[0] = batchData.transpose().multiply(del[0]);
-		// bias for first layer = sum up rows of del
-		db[0] = del[0].getRow(0);
-		for (int i = 1; i < batchSize; i++) {
-			db[0] = db[0].add(del[0].getRow(i));
-		}
-		
-		for (int k = 0; k < noLayers; k++) {
-			dW[k] = H[k-1].transpose().multiply(del[k]);
-			// bias = sum up rows of del
-			db[k] = del[k].getRow(0);
-			for (int i = 1; i < batchSize; i++) {
-				db[k] = db[k].add(del[k].getRow(i));
-			}
-		}
 	}
 	
 	@Override
 	public Matrix predict(Matrix Xhat) {
 		
 		forwardProp(Xhat);
-		return H[noLayers - 1];
+		return H[noLayers];
+	}
+	
+	private void debugPrint() {
+		System.out.println("Hhat0 is: ");
+		System.out.println(Hhat[0]);
+		System.out.println("Hhat1 is: ");
+		System.out.println(Hhat[1]);
+		System.out.println("H0 is: ");
+		System.out.println(H[0]);
+		System.out.println("H1 is: ");
+		System.out.println(H[1]);
+		System.out.println("W0 is: ");
+		System.out.println(W[0]);
+		System.out.println("W1 is: ");
+		System.out.println(W[1]);
+		System.out.println("del0 is: ");
+		System.out.println(del);
+		System.out.println("del1 is: ");
+		System.out.println("b0 is: ");
+		System.out.println(b[0]);
+		System.out.println("b1 is: ");
+		System.out.println(b[1]);
+		System.out.println("dW0 is: ");
+		System.out.println(dW[0]);
+		System.out.println("dW1 is: ");
+		System.out.println(dW[1]);
+		System.out.println("db0 is: ");
+		System.out.println(db[0]);
+		System.out.println("db1 is: ");
+		System.out.println(db[1]);
 	}
 	
 }

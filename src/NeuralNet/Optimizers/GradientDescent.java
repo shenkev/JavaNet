@@ -10,8 +10,8 @@ public class GradientDescent extends Optimizer{
 		
 		for (int i = 0; i < W.length; i++) {
 			
-			W[i] = W[i].subtract(dW[i].multiply(rate));
-			b[i] = b[i].subtract(db[i].multiply(rate));
+			W[i] = W[i].add(dW[i].multiply(rate));
+			b[i] = b[i].add(db[i].multiply(rate));
 			
 		}
 		
