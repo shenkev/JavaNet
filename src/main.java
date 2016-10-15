@@ -55,17 +55,17 @@ public class main {
 		int[] layerDims = new int[] { 4, 1 };
 		double trainRate = 0.2;
 		double momentum = 0.0;
-		NonLinFunction nonLinFunction = new Sigmoid();
-		Loss lossFunc = new SquareLoss();
+		NonLinFunction nonLinFunction = new Tanh();
+		Loss lossFunc = new LogisticLoss();
 		Optimizer optimizer = new GradientDescent();
-		int randSeed = 500;
+		int randSeed = 800;
 		
 		
 		NeuralNet nn = new NeuralNet(noFeatures, batchSize, noLayers, layerDims,
 				trainRate, momentum, nonLinFunction, lossFunc, optimizer, randSeed);
 
 		// training
-		int iter = 1000;
+		int iter = 10000;
 		int printPer = 10;
 		
 		for ( int i = 0; i < iter; i++ ) {
