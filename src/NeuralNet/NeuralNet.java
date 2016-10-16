@@ -29,10 +29,13 @@ public class NeuralNet implements NeuralNetInterface {
 	private Matrix[] dW;
 	private Vector[] db;
 	private double loss = 0;
+	private Vector ones;
 	
 	// Functions
 	private MatrixFunction noneLinearity;
 	private MatrixFunction noneLinearityDerivative;
+	private MatrixFunction outputFunction;
+	private MatrixFunction outputFunctionDerivative;
 	private Loss lossFunction;
 	
 	// Optimization
@@ -42,7 +45,7 @@ public class NeuralNet implements NeuralNetInterface {
 	
 	public NeuralNet(int noFeatures, int batchSize, int noLayers,
 			int[] layerDims, double trainRate, double momentum, 
-			NonLinFunction noLinFunc, Loss lossObj, Optimizer optimizer, int randSeed) {
+			NonLinFunction noLinFunc, NonLinFunction outputFunc, Loss lossObj, Optimizer optimizer, int randSeed) {
 				
 		this.noFeatures = noFeatures;
 		this.batchSize = batchSize;
@@ -50,10 +53,13 @@ public class NeuralNet implements NeuralNetInterface {
 		this.layerDimensions = layerDims;
 		this.noneLinearity = noLinFunc.fnc;
 		this.noneLinearityDerivative = noLinFunc.derivative;
+		this.outputFunction = outputFunc.fnc;
+		this.outputFunctionDerivative = outputFunc.derivative;
 		this.lossFunction = lossObj;
 		this.trainRate = trainRate;
 		this.momentum = momentum;
 		this.optimizer = optimizer;
+		this.ones = Vector.zero(this.batchSize).add(1.0);
 		
 		Random rand = new Random(randSeed);
 
@@ -89,19 +95,16 @@ public class NeuralNet implements NeuralNetInterface {
 
 	@Override
 	public void forwardProp(Matrix batchData) {
-		
-		// prepare first layer
-		// add bias
-		
+				
 		// iterate through each layer
-		for (int k = 0; k < noLayers; k++) {
-			Hhat[k] = H[k].multiply(W[k]);
-			// add bias
-//			for (int i = 0; i < batchSize; i++) {
-//				Hhat[k].setRow(i, Hhat[k].getRow(i).add(b[k]));
-//			}
+		for (int k = 0; k < noLayers-1; k++) {
+			
+			Hhat[k] = H[k].multiply(W[k]).add(ones.outerProduct(b[k]));
 			H[k+1] = Hhat[k].transform(noneLinearity);
 		}
+		// treat output with a different nonlinear function
+		Hhat[noLayers-1] = H[noLayers-1].multiply(W[noLayers-1]).add(ones.outerProduct(b[noLayers-1]));
+		H[noLayers] = Hhat[noLayers-1].transform(outputFunction);
 		
 	}
 
@@ -110,9 +113,10 @@ public class NeuralNet implements NeuralNetInterface {
 		
 		// prepare last layer
 		del = lossFunction.computeGradient(H[noLayers], y)
-							.hadamardProduct(Hhat[noLayers - 1].transform(noneLinearityDerivative));
+							.hadamardProduct(Hhat[noLayers - 1].transform(outputFunctionDerivative));
 		
 		// deal with bias
+		db[noLayers - 1] = ones.multiply(del);
 		dW[noLayers - 1] = H[noLayers-1].transpose().multiply(del);
 		// iterate backwards through layers
 		for (int k = noLayers-2; k >= 0; k--) {
@@ -120,6 +124,7 @@ public class NeuralNet implements NeuralNetInterface {
 			del = del.multiply(W[k+1].transpose())
 					.hadamardProduct(Hhat[k].transform(noneLinearityDerivative));
 			// deal with bias
+			db[k] = ones.multiply(del);
 			dW[k] = H[k].transpose().multiply(del);
 
 		}

@@ -8,9 +8,12 @@ import NeuralNet.NeuralNet;
 import NeuralNet.Costs.LogisticLoss;
 import NeuralNet.Costs.Loss;
 import NeuralNet.Costs.SquareLoss;
+import NeuralNet.NonLinFuncs.BipolarSigmoid;
 import NeuralNet.NonLinFuncs.NonLinFunction;
+import NeuralNet.NonLinFuncs.ReLu;
 import NeuralNet.NonLinFuncs.Sigmoid;
 import NeuralNet.NonLinFuncs.Tanh;
+import NeuralNet.NonLinFuncs.doNothing;
 import NeuralNet.Optimizers.GradientDescent;
 import NeuralNet.Optimizers.Optimizer;
 
@@ -31,17 +34,17 @@ public class main {
 		
 		// get data
 		double[][] Xarr = new double[][]{
-		  { 0, 0 },
-		  { 1, 0 },
-		  { 0, 1 },
+		  { -1, -1 },
+		  { 1, -1 },
+		  { -1, 1 },
 		  { 1, 1 }
 		};	
 		
 		double[] yarr = new double[] {
-			0,
+			-1,
 			1,
 			1,
-			0
+			-1
 		};
 		
 		Matrix X = DenseMatrix.from2DArray(Xarr);
@@ -51,22 +54,23 @@ public class main {
 		
 		int noFeatures = 2;
 		int batchSize = 4;
-		int noLayers = 2;
 		int[] layerDims = new int[] { 4, 1 };
+		int noLayers = layerDims.length;
 		double trainRate = 0.2;
 		double momentum = 0.0;
-		NonLinFunction nonLinFunction = new Tanh();
-		Loss lossFunc = new LogisticLoss();
+		NonLinFunction nonLinFunction = new Sigmoid();
+		NonLinFunction outputFunction = new Tanh();
+		Loss lossFunc = new SquareLoss();
 		Optimizer optimizer = new GradientDescent();
 		int randSeed = 800;
 		
 		
 		NeuralNet nn = new NeuralNet(noFeatures, batchSize, noLayers, layerDims,
-				trainRate, momentum, nonLinFunction, lossFunc, optimizer, randSeed);
+				trainRate, momentum, nonLinFunction, outputFunction, lossFunc, optimizer, randSeed);
 
 		// training
 		int iter = 10000;
-		int printPer = 10;
+		int printPer = 1;
 		
 		for ( int i = 0; i < iter; i++ ) {
 			 double loss = nn.runOnePass(X, y);

@@ -5,6 +5,7 @@ import org.la4j.Vector;
 
 import NeuralNet.LossAndDerivs.XSquared;
 
+// works with any range of predictions
 public class SquareLoss extends Loss {
 
 	@Override

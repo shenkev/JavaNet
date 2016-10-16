@@ -10,8 +10,4 @@ public class LogisticDerivative implements VectorFunction {
 		return -1.0/(1.0 + Math.pow( Math.E, value));
 	}
 
-
-
-
-
 }

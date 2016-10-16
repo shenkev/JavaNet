@@ -6,6 +6,7 @@ import org.la4j.Vector;
 import NeuralNet.LossAndDerivs.LogisticDerivative;
 import NeuralNet.LossAndDerivs.LogisticFunction;
 
+// Works only if prediction is from -inf to inf
 public class LogisticLoss extends Loss {
 
 	public LogisticLoss() {
@@ -32,7 +33,7 @@ public class LogisticLoss extends Loss {
 		}
 		
 		Vector result = truth.getColumn(0).hadamardProduct(prediction.getColumn(0)).transform(new LogisticDerivative());
-		result = result.hadamardProduct(truth.getColumn(0)); // extra times y from derivative
+		//result = result.hadamardProduct(truth.getColumn(0)); // extra times y from derivative
 		return result.toColumnMatrix();
 	}
 }

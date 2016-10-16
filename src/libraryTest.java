@@ -1,8 +1,18 @@
+import org.la4j.Vector;
 
 public class libraryTest {
 
 	public static void main(String[] args) {
-//		double[][] a1 = new double[][]{
+
+		double[] b2 = new double[] {
+			7, 8, 9
+		};
+		Vector v2 = Vector.fromArray(b2);
+		Vector v3 = Vector.zero(3).add(1.0);
+//		System.out.println(v3);
+		System.out.println(v3.multiply(v3.outerProduct(v2)));
+		
+		//		double[][] a1 = new double[][]{
 //		  { 1, 2, 3 },
 //		  { 4, 5, 6 },
 //		  { 7, 8, 9 }
@@ -34,6 +44,7 @@ public class libraryTest {
 //	System.out.println(m1.multiply(m2).add(m2));
 //	System.out.println(m1.transform(new xsquared()));
 
+		
 	}
 
 }
