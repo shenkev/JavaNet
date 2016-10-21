@@ -4,9 +4,9 @@ import org.la4j.Matrix;
 import org.la4j.Vector;
 
 public abstract class Optimizer {
-
-	public OptimizationResult optimize(Matrix[] W, Vector[] b, Matrix[] dW, Vector[] db, double rate, double momentum) {
-		return null; // Do not call this abstract method
+	
+	public OptimizationResult optimize(Matrix[] W, Vector[] b, Matrix[] dW, Vector[] db) {
+		throw new IllegalArgumentException(); // Do not call this abstract method
 	};
 	
 	public class OptimizationResult {

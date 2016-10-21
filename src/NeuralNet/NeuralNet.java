@@ -1,6 +1,9 @@
 package NeuralNet;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import org.la4j.Matrix;
 import org.la4j.Vector;
@@ -39,12 +42,9 @@ public class NeuralNet implements NeuralNetInterface {
 	private Loss lossFunction;
 	
 	// Optimization
-	private double trainRate;
-	private double momentum;
 	private Optimizer optimizer;
 	
-	public NeuralNet(int noFeatures, int batchSize, int noLayers,
-			int[] layerDims, double trainRate, double momentum, 
+	public NeuralNet(int noFeatures, int batchSize, int noLayers, int[] layerDims,
 			NonLinFunction noLinFunc, NonLinFunction outputFunc, Loss lossObj, Optimizer optimizer, int randSeed) {
 				
 		this.noFeatures = noFeatures;
@@ -56,8 +56,6 @@ public class NeuralNet implements NeuralNetInterface {
 		this.outputFunction = outputFunc.fnc;
 		this.outputFunctionDerivative = outputFunc.derivative;
 		this.lossFunction = lossObj;
-		this.trainRate = trainRate;
-		this.momentum = momentum;
 		this.optimizer = optimizer;
 		this.ones = Vector.zero(this.batchSize).add(1.0);
 		
@@ -95,7 +93,7 @@ public class NeuralNet implements NeuralNetInterface {
 
 	@Override
 	public void forwardProp(Matrix batchData) {
-				
+		
 		// iterate through each layer
 		for (int k = 0; k < noLayers-1; k++) {
 			
@@ -134,7 +132,7 @@ public class NeuralNet implements NeuralNetInterface {
 	@Override
 	public double runOnePass(Matrix X, Matrix y) {
 		
-		if ( y.rows() != batchSize ) {
+		if ( X.rows() != batchSize ) {
 			throw new IllegalArgumentException("Batch size is not as promised.");
 		}
 		
@@ -146,7 +144,7 @@ public class NeuralNet implements NeuralNetInterface {
 		forwardProp(X);
 		loss = lossFunction.computeLoss(H[noLayers], y);
 		backwardProp(y);
-		OptimizationResult result = optimizer.optimize(W, b, dW, db, trainRate, momentum);
+		OptimizationResult result = optimizer.optimize(W, b, dW, db);
 		
 		if (result == null) {
 			System.out.println("Error: called invalid optimization function.");
@@ -162,38 +160,14 @@ public class NeuralNet implements NeuralNetInterface {
 	@Override
 	public Matrix predict(Matrix Xhat) {
 		
+		H[0] = Xhat;
 		forwardProp(Xhat);
 		return H[noLayers];
 	}
 	
-	private void debugPrint() {
-		System.out.println("Hhat0 is: ");
-		System.out.println(Hhat[0]);
-		System.out.println("Hhat1 is: ");
-		System.out.println(Hhat[1]);
-		System.out.println("H0 is: ");
-		System.out.println(H[0]);
-		System.out.println("H1 is: ");
-		System.out.println(H[1]);
-		System.out.println("W0 is: ");
-		System.out.println(W[0]);
-		System.out.println("W1 is: ");
-		System.out.println(W[1]);
-		System.out.println("del0 is: ");
-		System.out.println(del);
-		System.out.println("del1 is: ");
-		System.out.println("b0 is: ");
-		System.out.println(b[0]);
-		System.out.println("b1 is: ");
-		System.out.println(b[1]);
-		System.out.println("dW0 is: ");
-		System.out.println(dW[0]);
-		System.out.println("dW1 is: ");
-		System.out.println(dW[1]);
-		System.out.println("db0 is: ");
-		System.out.println(db[0]);
-		System.out.println("db1 is: ");
-		System.out.println(db[1]);
+	// Need to update this when we're predicting which is annoying
+	public void setBatchSize(int s) {
+		this.batchSize = s;
+		this.ones = Vector.zero(this.batchSize).add(1.0);
 	}
-	
 }
