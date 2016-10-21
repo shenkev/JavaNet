@@ -16,6 +16,7 @@ import NeuralNet.NonLinFuncs.NonLinFunction;
 import NeuralNet.NonLinFuncs.ReLu;
 import NeuralNet.NonLinFuncs.Sigmoid;
 import NeuralNet.NonLinFuncs.Tanh;
+import NeuralNet.NonLinFuncs.doNothing;
 import NeuralNet.Optimizers.GradientDescent;
 import NeuralNet.Optimizers.Optimizer;
 
@@ -39,8 +40,8 @@ public class Runners {
 		int noLayers = layerDims.length;
 		double trainRate = 0.2;
 		double momentum = 0.9;
-		NonLinFunction nonLinFunction = new ReLu();
-		NonLinFunction outputFunction = new Tanh();
+		NonLinFunction nonLinFunction = new Sigmoid();
+		NonLinFunction outputFunction = new doNothing();
 		Loss lossFunc = new SquareLoss();
 		Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures);
 		int randSeed = 800;		
@@ -48,7 +49,7 @@ public class Runners {
 				nonLinFunction, outputFunction, lossFunc, optimizer, randSeed);
 
 		// training params
-		int iter = 40;
+		int iter = 1000;
 		int printPer = 1;
 		int convergedIteration = 0;
 		boolean converged = false;
