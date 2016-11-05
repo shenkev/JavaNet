@@ -11,11 +11,12 @@ public class SquareLoss extends Loss {
 	@Override
 	public double computeLoss(Matrix prediction, Matrix truth) {
 		
-		if ( prediction.columns() != 1 || truth.columns() != 1) {
-			throw new IllegalArgumentException("Squared function only takes 1D vectors");
-		}
+//		if ( prediction.columns() != 1 || truth.columns() != 1) {
+//			throw new IllegalArgumentException("Squared function only takes 1D vectors");
+//		}
 		
-		Vector result = truth.getColumn(0).subtract(prediction.getColumn(0));
+//		Vector result = truth.getColumn(0).subtract(prediction.getColumn(0));
+		Matrix result = truth.subtract(prediction);
 		result.update(new XSquared());
 		return 0.5*result.sum();
 	}
@@ -23,12 +24,13 @@ public class SquareLoss extends Loss {
 	@Override
 	public Matrix computeGradient(Matrix prediction, Matrix truth) {
 		
-		if ( prediction.columns() != 1 || truth.columns() != 1) {
-			throw new IllegalArgumentException("Squared function only takes 1D vectors");
-		}
+//		if ( prediction.columns() != 1 || truth.columns() != 1) {
+//			throw new IllegalArgumentException("Squared function only takes 1D vectors");
+//		}
 		
-		Vector result = prediction.getColumn(0).subtract(truth.getColumn(0));
-		return result.toColumnMatrix();
+//		Vector result = prediction.getColumn(0).subtract(truth.getColumn(0));
+//		return result.toColumnMatrix();
+		return prediction.subtract(truth);
 	}
 	
 }

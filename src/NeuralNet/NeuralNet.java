@@ -31,8 +31,10 @@ public class NeuralNet implements NeuralNetInterface {
 	private Vector[] b;
 	private Matrix[] dW;
 	private Vector[] db;
+	private Matrix[] HdropoutMask;
 	private double loss = 0;
 	private Vector ones;
+	private Random rand;
 	
 	// Functions
 	private MatrixFunction noneLinearity;
@@ -43,6 +45,9 @@ public class NeuralNet implements NeuralNetInterface {
 	
 	// Optimization
 	private Optimizer optimizer;
+	
+	// Hyper-parameters
+	private double dropout = 1.0;	// expressed as a decimal, probability neuron is present
 	
 	public NeuralNet(int noFeatures, int batchSize, int noLayers, int[] layerDims,
 			NonLinFunction noLinFunc, NonLinFunction outputFunc, Loss lossObj, Optimizer optimizer, int randSeed) {
@@ -59,7 +64,7 @@ public class NeuralNet implements NeuralNetInterface {
 		this.optimizer = optimizer;
 		this.ones = Vector.zero(this.batchSize).add(1.0);
 		
-		Random rand = new Random(randSeed);
+		this.rand = new Random(randSeed);
 
 		// Initialize weight matrix
 		W = new Matrix[this.noLayers];
@@ -88,22 +93,41 @@ public class NeuralNet implements NeuralNetInterface {
 		// Initialize states
 		H = new Matrix[this.noLayers + 1];
 		Hhat = new Matrix[this.noLayers];
-		
+		HdropoutMask = new Matrix[this.noLayers - 1]; // don't drop first layer
 	}
 
+	// ========================== Propagation Functions ========================== //
+	
 	@Override
-	public void forwardProp(Matrix batchData) {
+	public Matrix forwardProp(Matrix batchData) {
 		
 		// iterate through each layer
 		for (int k = 0; k < noLayers-1; k++) {
 			
+			// Do dropout
+			if (dropout < 0.99 && k!=0) { // we actually intend to do dropout
+				
+				// Need to mask H[k]
+				HdropoutMask[k-1] = createMask(
+						H[k].rows(), H[k].columns(), dropout).divide(dropout);
+				H[k] = H[k].hadamardProduct(HdropoutMask[k-1]);
+				
+			}
+
 			Hhat[k] = H[k].multiply(W[k]).add(ones.outerProduct(b[k]));
 			H[k+1] = Hhat[k].transform(noneLinearity);
 		}
+		
 		// treat output with a different nonlinear function
+		if (dropout < 0.99) { // we actually intend to do dropout
+			HdropoutMask[noLayers-2] = createMask(
+					H[noLayers-1].rows(), H[noLayers-1].columns(), dropout).divide(dropout);
+			H[noLayers-1] = H[noLayers-1].hadamardProduct(HdropoutMask[noLayers-2]);
+		}
 		Hhat[noLayers-1] = H[noLayers-1].multiply(W[noLayers-1]).add(ones.outerProduct(b[noLayers-1]));
 		H[noLayers] = Hhat[noLayers-1].transform(outputFunction);
 		
+		return H[noLayers];
 	}
 
 	@Override
@@ -121,6 +145,9 @@ public class NeuralNet implements NeuralNetInterface {
 			
 			del = del.multiply(W[k+1].transpose())
 					.hadamardProduct(Hhat[k].transform(noneLinearityDerivative));
+			if (dropout < 0.99) {
+				del = del.hadamardProduct(HdropoutMask[k]);
+			}
 			// deal with bias
 			db[k] = ones.multiply(del);
 			dW[k] = H[k].transpose().multiply(del);
@@ -163,6 +190,30 @@ public class NeuralNet implements NeuralNetInterface {
 		H[0] = Xhat;
 		forwardProp(Xhat);
 		return H[noLayers];
+	}
+	
+	// ========================== Helper Functions ========================== //
+	
+	public void setDropout(double threshold) {
+		if (threshold > 0.0 && threshold <= 1.0) {
+			this.dropout = threshold;
+		} else {
+			throw new IllegalArgumentException("Dropout needs to be between 0 and 1");
+		}
+	}
+	
+	public Matrix createMask(int rows, int cols, double probOfOne) {
+		
+		double[] maskArr = new double[rows*cols];
+		for (int i=0; i<rows*cols; i++) {
+			if (this.rand.nextDouble() < probOfOne) {
+				maskArr[i] = 1;
+			} else {
+				maskArr[i] = 0;
+			}
+		}
+		
+		return Matrix.from1DArray(rows, cols, maskArr);
 	}
 	
 	// Need to update this when we're predicting which is annoying

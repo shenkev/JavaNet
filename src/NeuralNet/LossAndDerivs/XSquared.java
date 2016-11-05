@@ -1,11 +1,11 @@
 package NeuralNet.LossAndDerivs;
 
-import org.la4j.vector.functor.VectorFunction;
+import org.la4j.matrix.functor.MatrixFunction;
 
-public class XSquared implements VectorFunction {
+public class XSquared implements MatrixFunction {
 
 	@Override
-	public double evaluate(int i, double value) {
+	public double evaluate(int i, int j, double value) {
 
 		return value*value;
 	}
