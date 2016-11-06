@@ -145,6 +145,7 @@ public class NeuralNet implements NeuralNetInterface {
 			
 			del = del.multiply(W[k+1].transpose())
 					.hadamardProduct(Hhat[k].transform(noneLinearityDerivative));
+			// dropout
 			if (dropout < 0.99) {
 				del = del.hadamardProduct(HdropoutMask[k]);
 			}

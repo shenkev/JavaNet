@@ -1,24 +1,21 @@
 import java.awt.Color;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.text.DecimalFormat;
 import java.util.Random;
 
+import IO.LUTIO;
+import IO.ResultsIO;
 import robocode.AdvancedRobot;
 import robocode.BulletHitEvent;
 import robocode.DeathEvent;
 import robocode.HitWallEvent;
-import robocode.RobocodeFileOutputStream;
 import robocode.ScannedRobotEvent;
 import robocode.WinEvent;
 
-public class Player2RLRobot extends AdvancedRobot {
+public class BigLUTRobot extends AdvancedRobot {
 	// ========================== Hyper Parameters ============================ //
-   final double alpha = 0.3;
-   final double gamma = 0.96;
-   final double epsilon = 0.1;
+   static double alpha = 0.3;
+   static double gamma = 0.975;
+   static double epsilon = 0.1;
    
    final double rewardOnWin = 10.0;
 	
@@ -28,20 +25,24 @@ public class Player2RLRobot extends AdvancedRobot {
 	// ============================ Local Storage ============================= //
     
    static int iter = 0;
+   static int previousWins = 0;
+   static int previousLosses = 0;
+   static final int saveLUTEvery = 1000;
+   static final int saveResultsEvery = 100;
    double fieldWidth;
    double fieldHeight;
    Random rand = new Random();
     
    static final int numberOfTotalStateActionParams = 9;
-   static final int ownEnergyLevels = 3;
+   static final int ownEnergyLevels = 7;
    static final int ownVelocityLevels = 1;
    static final int ownDistanceToEdgeLevels = 5;
    static final int distanceToEnemyLevels = 5;
-   static final int enemyEnergyLevels = 3;
+   static final int enemyEnergyLevels = 7;
    static final int enemyVelocityLevels = 1;
-   static final int enemyBearingLevels = 4;
-   static final int robotsHeadingLevels = 4;
-   static final int numberOfActions = 6;
+   static final int enemyBearingLevels = 8;
+   static final int robotsHeadingLevels = 8;
+   static final int numberOfActions = 10;
    static final int numberOfTotalStateActions = ownEnergyLevels*ownVelocityLevels
 		   *ownDistanceToEdgeLevels*distanceToEnemyLevels*enemyEnergyLevels
 		   *enemyVelocityLevels*enemyBearingLevels*robotsHeadingLevels
@@ -66,14 +67,14 @@ public class Player2RLRobot extends AdvancedRobot {
    double reward;
    
    String saveFileName = "LUT.txt";
+   String resultFileName = "results.txt";
+   String loadFileName = "LUT.txt";
     
    public void run() {
-	   
     	// run at beginning of EACH GAME
 	   	if (iter == 0) {
-		   	try {
-		   		String fileName = "LUT.txt";
-				load(fileName);
+	   		try {
+				LUT = LUTIO.load(loadFileName, numberOfTotalStateActions);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -106,7 +107,8 @@ public class Player2RLRobot extends AdvancedRobot {
 	   double absBearing=e.getBearingRadians()+getHeadingRadians();//enemies absolute bearing
 	   double latVel=e.getVelocity() * Math.sin(e.getHeadingRadians() -absBearing);//enemies later velocity
 	   setTurnRadarLeftRadians(getRadarTurnRemainingRadians());//lock on the radar
-	   double gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/22);//amount to turn our gun, lead just a little bit
+	   double gunTurnAmt = robocode.util.Utils.normalRelativeAngle(
+			   absBearing- getGunHeadingRadians()+latVel/22);//amount to turn our gun, lead just a little bit
 	   setTurnGunRightRadians(gunTurnAmt); //turn our gun
 	   
 	   // take current action
@@ -133,8 +135,16 @@ public class Player2RLRobot extends AdvancedRobot {
 			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
 					   + alpha*rewardOnWin;
 	   iter++;
-	   if (iter % 100 == 0) {
-		   save(saveFileName);
+	   previousWins++;
+	   // save results
+	   if (iter % saveResultsEvery == 0) {
+		   ResultsIO.writeWins(resultFileName, previousWins);
+		   previousWins = 0;
+		   previousLosses = 0;
+	   }
+	   // save LUT
+	   if (iter % saveLUTEvery == 0) {
+		   LUTIO.save(saveFileName, LUT);
 	   }
    }
    
@@ -144,9 +154,17 @@ public class Player2RLRobot extends AdvancedRobot {
 			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
 					   - alpha*rewardOnWin;
 	   iter++;
-	   if (iter % 100 == 0) {
-		   save(saveFileName);
+	   previousLosses++;
+	   // save results
+	   if (iter % saveResultsEvery == 0) {
+		   ResultsIO.writeWins(resultFileName, previousWins);
+		   previousWins = 0;
+		   previousLosses = 0;
 	   } 
+	   // save LUT
+	   if (iter % saveLUTEvery == 0) {
+		   LUTIO.save(saveFileName, LUT);
+	   }
    }
    
    public void onBulletHit(BulletHitEvent event) {
@@ -203,14 +221,23 @@ public class Player2RLRobot extends AdvancedRobot {
    public int returnEnergyLevel(double energy) {
 	    	
 		double[] thresholds = new double[ownEnergyLevels-1];
-		thresholds[0] = 30.0; thresholds[1] = 60.0;
+		thresholds[0] = 15.0; thresholds[1] = 30.0; thresholds[2] = 45.0;
+		thresholds[3] = 60.0; thresholds[4] = 75.0; thresholds[5] = 90.0;
 		
-		if (energy > thresholds[1]) {
-			return 2;
-		} else if (energy > thresholds[0]) {
-			return 1;
-		} else {
+		if (energy > thresholds[5]) {
 			return 0;
+		} else if (energy > thresholds[4]) {
+			return 1;
+		} else if (energy > thresholds[3]) {
+			return 2;
+		} else if (energy > thresholds[2]) {
+			return 3;
+		} else if (energy > thresholds[1]) {
+			return 4;
+		} else if (energy > thresholds[0]) {
+			return 5;
+		} else {
+			return 6;
 		}
    }
     
@@ -250,42 +277,50 @@ public class Player2RLRobot extends AdvancedRobot {
    }
    
    public int returnVelocityLevel(double velocity) {
-	   
-//	   double threshold = 1.0;
-//	   
-//	   if (velocity > threshold) {
-//		   return 1;
-//	   } else {
-//		   return 0;
-//	   }
 	   return 0;
    }
    
    public int returnBearingLevel(double bearing) {
 	   
 	   // bearing is -180 <= x < 180
-	   if (bearing < 45.0 && bearing >= -45.0) {
+	   if (bearing >= -180.0 && bearing < -135.0) {
 		   return 0;
-	   } else if (bearing > 45.0 && bearing <= 135.0) {
+	   } else if (bearing >= -135.0 && bearing < -90.0) {
 		   return 1;
-	   } else if (bearing >= -135.0 && bearing < -45.0) {
+	   } else if (bearing >= -90.0 && bearing < -45.0) {
 		   return 2;
-	   } else {
+	   } else if (bearing >= -45.0 && bearing < 0.0) {
 		   return 3;
+	   } else if (bearing >= 0.0 && bearing < 45.0) {
+		   return 4;
+	   } else if (bearing >= 45.0 && bearing < 90.0) {
+		   return 5;
+	   } else if (bearing >= 90.0 && bearing < 135.0) {
+		   return 6;
+	   } else {
+		   return 7;
 	   }
    }
    
    public int returnHeadingLevel(double heading) {
 	   
 	   // bearing is -180 <= x < 180
-	   if (heading < 45.0 && heading >= -45.0) {
+	   if (heading >= -180.0 && heading < -135.0) {
 		   return 0;
-	   } else if (heading > 45.0 && heading <= 135.0) {
+	   } else if (heading >= -135.0 && heading < -90.0) {
 		   return 1;
-	   } else if (heading >= -135.0 && heading < -45.0) {
+	   } else if (heading >= -90.0 && heading < -45.0) {
 		   return 2;
-	   } else {
+	   } else if (heading >= -45.0 && heading < 0.0) {
 		   return 3;
+	   } else if (heading >= 0.0 && heading < 45.0) {
+		   return 4;
+	   } else if (heading >= 45.0 && heading < 90.0) {
+		   return 5;
+	   } else if (heading >= 90.0 && heading < 135.0) {
+		   return 6;
+	   } else {
+		   return 7;
 	   }
    }
    
@@ -316,62 +351,52 @@ public class Player2RLRobot extends AdvancedRobot {
 		   break;
 		   
 	   case 1:
-		   setBack(moveStep);
-		   break;
-		   
-	   case 2:
-		   setTurnLeft(90.0);
+		   setTurnRight(45.0);
 		   setAhead(moveStep);
 		   break;
 		   
-	   case 3:
+	   case 2:
 		   setTurnRight(90.0);
 		   setAhead(moveStep);
 		   break;
 		   
+	   case 3:
+		   setTurnRight(135.0);
+		   setAhead(moveStep);
+		   break;
+		   
 	   case 4:
-		   setFire(1);
+		   setTurnRight(180.0);
+		   setAhead(moveStep);
 		   break;
 		   
 	   case 5:
+		   setTurnRight(-135.0);
+		   setAhead(moveStep);
+		   break;
+		   
+	   case 6:
+		   setTurnRight(-90.0);
+		   setAhead(moveStep);
+		   break;
+		   
+	   case 7:
+		   setTurnRight(-45.0);
+		   setAhead(moveStep);
+		   break;
+		   
+	   case 8:
+		   setFire(1);
+		   break;
+		  
+	   case 9:
 		   setFire(3);
 		   break;
 		   
 	   }
    }
-   // =================== Helpers for Logistics ====================== //
-   public void save(String fileName) {
-
-	   DecimalFormat numberFormat = new DecimalFormat("#.000");
-	   
-		PrintStream w = null;
-		try {
-			w = new PrintStream(new RobocodeFileOutputStream(getDataFile(fileName)));
-			for (int i=0; i < numberOfTotalStateActions; i++) {
-				w.println(numberFormat.format(LUT[i]));
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			w.flush();
-			w.close();
-		}
-   }
    
-   public void load(String fileName) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(getDataFile(fileName)));
-		String line = reader.readLine();
-		try {
-	        int index = 0;
-	        while (line != null) {
-	        	LUT[index] = Double.parseDouble(line);
-	        	line= reader.readLine();
-	        	index++;
-	        }
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			reader.close();
-		}
-	}
+   public void setExploration(double newExploration) {
+	   BigLUTRobot.epsilon = newExploration;
+   }
 }

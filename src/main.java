@@ -30,7 +30,7 @@ public class main {
 			-1
 		};
 		
-		Runners.Stochastic(Xarr, yarr);
+		Runners.NonStochastic(Xarr, yarr);
 	}
 }
 

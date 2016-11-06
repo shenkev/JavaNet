@@ -15,7 +15,7 @@ import robocode.RobocodeFileOutputStream;
 import robocode.ScannedRobotEvent;
 import robocode.WinEvent;
 
-public class RLRobot extends AdvancedRobot {
+public class SarsaRobot extends AdvancedRobot {
 	// ========================== Hyper Parameters ============================ //
    final double alpha = 0.3;
    final double gamma = 0.975;
@@ -100,11 +100,15 @@ public class RLRobot extends AdvancedRobot {
         }
    }
  
-   // ============================ Q-Learning ============================= //
+   // ============================ Sarsa ============================= //
    public void onScannedRobot(ScannedRobotEvent e) {
+	   // WE PUT THIS HERE BECAUSE END REWARDS NEED TO KNOW s AND a
+	   // update previous state/action to current state/action
+	   previousStateIndex = currentStateIndex;
+	   previousActionIndex = currentActionIndex;
 	   
-       // choose current action from previous state using epsilon policy
-	   currentActionIndex = epsilonGreedyPolicyChooseAction(previousStateIndex);
+	   // take previous action
+	   takeAction(previousActionIndex);
 	   
 	   // always track enemy with gun
 	   double absBearing=e.getBearingRadians()+getHeadingRadians();//enemies absolute bearing
@@ -114,28 +118,27 @@ public class RLRobot extends AdvancedRobot {
 			   absBearing- getGunHeadingRadians()+latVel/22);//amount to turn our gun, lead just a little bit
 	   setTurnGunRightRadians(gunTurnAmt); //turn our gun
 	   
-	   // take current action
-	   takeAction(currentActionIndex);
-	   
 	   // observe current state
 	   currentStateIndex = returnLUTStateIndex(getEnergy(), getVelocity(), getX(), 
 			   getY(), e.getDistance(), e.getEnergy(), e.getVelocity(), 
 			   e.getBearing(), getHeading());
 	   reward = 0;
 	   
-	   // update Q(previousState, currentAction)
-	   LUT[previousStateIndex + currentActionIndex] = 
-			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
-					   + alpha*(reward + gamma*bestQ(currentStateIndex));
+       // choose current action from current state using epsilon policy
+	   currentActionIndex = epsilonGreedyPolicyChooseAction(currentStateIndex);
 	   
-	   // update previous state to current state
-	   previousStateIndex = currentStateIndex;
+	   // update Q(previousState, previousAction)
+	   LUT[previousStateIndex + previousActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + previousActionIndex]
+					   + alpha*(reward + gamma*
+							   LUT[currentStateIndex + currentActionIndex]);
+	   
    }
 
    public void onWin(WinEvent event) {
 
-	   LUT[previousStateIndex + currentActionIndex] = 
-			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
+	   LUT[previousStateIndex + previousActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + previousActionIndex]
 					   + alpha*rewardOnWin;
 	   iter++;
 	   previousWins++;
@@ -150,8 +153,8 @@ public class RLRobot extends AdvancedRobot {
    
    public void onDeath(DeathEvent event) {
 	  
-	   LUT[previousStateIndex + currentActionIndex] = 
-			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
+	   LUT[previousStateIndex + previousActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + previousActionIndex]
 					   - alpha*rewardOnWin;
 	   iter++;
 	   previousLosses++;
@@ -164,11 +167,15 @@ public class RLRobot extends AdvancedRobot {
 	   } 
    }
    
+   public void onBulletHit(BulletHitEvent event) {
+	   
+   }
+   
    public void onHitWall(HitWallEvent event) {
 	   double hitWallPenalty = 1.0;
 	   
-	   LUT[previousStateIndex + currentActionIndex] = 
-			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
+	   LUT[previousStateIndex + previousActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + previousActionIndex]
 					   - alpha*hitWallPenalty;
    }
    
