@@ -390,7 +390,7 @@ public class BigLUTRobot extends AdvancedRobot {
 		   break;
 		  
 	   case 9:
-		   setFire(3);
+		   setFire(2);
 		   break;
 		   
 	   }

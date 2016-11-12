@@ -364,7 +364,7 @@ public class EarlyRewardQRobot extends AdvancedRobot {
 		   break;
 		   
 	   case 5:
-		   setFire(3);
+		   setFire(2);
 		   break;
 		   
 	   }

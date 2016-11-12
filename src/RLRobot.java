@@ -19,7 +19,7 @@ public class RLRobot extends AdvancedRobot {
 	// ========================== Hyper Parameters ============================ //
    final double alpha = 0.3;
    final double gamma = 0.975;
-   final double epsilon = 0.1;
+   final double epsilon = 0.3;
    
    final double rewardOnWin = 10.0;
 	
@@ -336,7 +336,7 @@ public class RLRobot extends AdvancedRobot {
 		   break;
 		   
 	   case 5:
-		   setFire(3);
+		   setFire(2);
 		   break;
 		   
 	   }
