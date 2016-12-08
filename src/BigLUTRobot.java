@@ -6,7 +6,9 @@ import IO.LUTIO;
 import IO.ResultsIO;
 import robocode.AdvancedRobot;
 import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
 import robocode.DeathEvent;
+import robocode.HitByBulletEvent;
 import robocode.HitWallEvent;
 import robocode.ScannedRobotEvent;
 import robocode.WinEvent;
@@ -15,7 +17,7 @@ public class BigLUTRobot extends AdvancedRobot {
 	// ========================== Hyper Parameters ============================ //
    static double alpha = 0.3;
    static double gamma = 0.975;
-   static double epsilon = 0.1;
+   static double epsilon = 0.6;
    
    final double rewardOnWin = 10.0;
 	
@@ -167,8 +169,30 @@ public class BigLUTRobot extends AdvancedRobot {
 	   }
    }
    
+   // ============================ Intermediate awards ============================= //
    public void onBulletHit(BulletHitEvent event) {
+	   double bulletHitReward = 1.0;
+
+	   LUT[previousStateIndex + currentActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
+					   + alpha*bulletHitReward;
+   }
+   
+   public void onBulletMissed(BulletMissedEvent event) {
+	   double bulletMissReward = 0.3;
+
+	   LUT[previousStateIndex + currentActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
+					   - alpha*bulletMissReward;
 	   
+   }
+   
+   public void onHitByBullet(HitByBulletEvent event) {
+	   double gotHitReward = 0.5;
+
+	   LUT[previousStateIndex + currentActionIndex] = 
+			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]
+					   - alpha*gotHitReward;
    }
    
    public void onHitWall(HitWallEvent event) {

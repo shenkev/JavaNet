@@ -33,6 +33,7 @@ public class NeuralNet implements NeuralNetInterface {
 	private Vector[] db;
 	private Matrix[] HdropoutMask;
 	private double loss = 0;
+	private double previousLoss = 0;
 	private Vector ones;
 	private Random rand;
 	
@@ -101,6 +102,8 @@ public class NeuralNet implements NeuralNetInterface {
 	@Override
 	public Matrix forwardProp(Matrix batchData) {
 		
+		H[0] = batchData;
+		
 		// iterate through each layer
 		for (int k = 0; k < noLayers-1; k++) {
 			
@@ -134,8 +137,9 @@ public class NeuralNet implements NeuralNetInterface {
 	public void backwardProp(Matrix y) {
 		
 		// prepare last layer
-		del = lossFunction.computeGradient(H[noLayers], y)
-							.hadamardProduct(Hhat[noLayers - 1].transform(outputFunctionDerivative));
+		Matrix t1 = lossFunction.computeGradient(H[noLayers], y);
+		Matrix t2 = Hhat[noLayers - 1].transform(outputFunctionDerivative);
+		del = t1.hadamardProduct(t2);
 		
 		// deal with bias
 		db[noLayers - 1] = ones.multiply(del);
@@ -168,10 +172,13 @@ public class NeuralNet implements NeuralNetInterface {
 			throw new IllegalArgumentException("Number of outputs doesn't match number of truth classes.");
 		}
 				
-		H[0] = X;
 		forwardProp(X);
 		loss = lossFunction.computeLoss(H[noLayers], y);
 		backwardProp(y);
+//		if (loss > previousLoss) {
+//			optimizer.setLearnRate(optimizer.getLearnRate()/2.0);
+//		}
+		previousLoss = loss;
 		OptimizationResult result = optimizer.optimize(W, b, dW, db);
 		
 		if (result == null) {
@@ -188,7 +195,6 @@ public class NeuralNet implements NeuralNetInterface {
 	@Override
 	public Matrix predict(Matrix Xhat) {
 		
-		H[0] = Xhat;
 		forwardProp(Xhat);
 		return H[noLayers];
 	}
@@ -221,5 +227,26 @@ public class NeuralNet implements NeuralNetInterface {
 	public void setBatchSize(int s) {
 		this.batchSize = s;
 		this.ones = Vector.zero(this.batchSize).add(1.0);
+	}
+	
+	// Getters and Setters
+	public Matrix[] getW() {
+		
+		return this.W;
+	}
+	
+	public void setW(Matrix[] newW) {
+		
+		this.W = newW;
+	}
+	
+	public Vector[] getb() {
+		
+		return this.b;
+	}
+	
+	public void setb(Vector[] newb) {
+		
+		this.b = newb;
 	}
 }

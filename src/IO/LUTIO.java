@@ -11,7 +11,8 @@ import robocode.RobocodeFileOutputStream;
 
 public class LUTIO {
 	
-	final static String folderPath = "./../workspace/Robocode/results/";
+//	final static String folderPath = "./../workspace/Robocode/results/";
+	final static String folderPath = "./results/";
 	
 	public static void save(String fileName, double[] LUT) {
 
@@ -54,4 +55,27 @@ public class LUTIO {
 			
 			return LUT;
 	}
+	
+//	public static double[] load(String fileName, int length) throws IOException {
+//		
+//		String fullPath = folderPath + fileName;
+//		BufferedReader reader = new BufferedReader(new FileReader(fullPath));
+//		double[] LUT = new double[length];
+//		
+//		String line = reader.readLine();
+//		try {
+//	        int index = 0;
+//	        while (line != null) {
+//	        	LUT[index] = Double.parseDouble(line);
+//	        	line= reader.readLine();
+//	        	index++;
+//	        }
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		} finally {
+//			reader.close();
+//		}
+//		
+//		return LUT;
+//	}
 }

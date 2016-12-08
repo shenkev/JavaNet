@@ -343,7 +343,7 @@ public class SarsaRobot extends AdvancedRobot {
 		   break;
 		   
 	   case 5:
-		   setFire(2);
+		   setFire(1.5);
 		   break;
 		   
 	   }

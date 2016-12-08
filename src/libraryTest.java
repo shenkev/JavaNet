@@ -11,6 +11,8 @@ import org.la4j.Matrix;
 import org.la4j.Vector;
 import org.la4j.matrix.DenseMatrix;
 
+import IO.WeightIO;
+
 public class libraryTest {
 
 	public static void main(String[] args) {
@@ -42,22 +44,124 @@ public class libraryTest {
 		  { 1, 2, 3 },
 		  { 4, 5, 6 },
 		  { 7, 8, 9 }
-		};
-	Matrix m1 = DenseMatrix.from2DArray(a1);
+	};
 	
-	double threshold = 0.3;
-	Random rand = new Random();
-	double[] maskArr = new double[m1.rows()*m1.columns()];
-	for (int i=0; i<m1.rows()*m1.columns(); i++) {
-		if (rand.nextDouble() < threshold) {
-			maskArr[i] = 0;
-		} else {
-			maskArr[i] = 1;
-		}
+	double[][] a2 = Arrays.copyOfRange(a1, 0, 3);
+	for (int i=0; i<a2.length; i++) {
+		System.out.println(Arrays.toString(a2[i]));
 	}
-	System.out.println(Arrays.toString(maskArr));
-	Matrix mask = Matrix.from1DArray(m1.rows(), m1.columns(), maskArr);
-	System.out.println(mask);
+	
+//	Matrix[] W = new Matrix[3];
+//	W[0] = DenseMatrix.from2DArray(new double[][]{
+//		  { 1, 2, 3 },
+//		  { 4, 5, 6 },
+//		  { 7, 8, 9 }
+//	});
+//	W[1] = DenseMatrix.from2DArray(new double[][]{
+//		  { 11, 22 },
+//		  { 33, 44 },
+//		  { 55, 66 }
+//	});
+//	W[2] = DenseMatrix.from2DArray(new double[][]{
+//		  { 111, 222, 333 },
+//		  { 444, 555, 666 }
+//	});
+//	
+//	int[][] dims = new int[][]{
+//		{ 3, 3 },
+//		{ 3, 2 },
+//		{ 2, 3 }
+//	};
+//	
+////	WeightIO.save("w/", "weight", W);
+//	Matrix[] test = null;
+//	try {
+//		test = WeightIO.load("w/", dims);
+//	} catch (IOException e) {
+//		// TODO Auto-generated catch block
+//		e.printStackTrace();
+//	}	
+	
+//	for(int i=0; i<W.length; i++) {
+//		System.out.println(W[i]);
+//	}
+//	System.out.println();
+//	for(int i=0; i<test.length; i++) {
+//		System.out.println(test[i]);
+//	}
+//		
+//Vector[] b = new Vector[3];
+//b[0] = Vector.fromArray(new double[]{1, 2, 3});
+//b[1] = Vector.fromArray(new double[]{4, 5});
+//b[2] = Vector.fromArray(new double[]{6, 7, 8, 9});
+//int[][] dims2 = new int[][]{
+//	{ 1, 3 },
+//	{ 1, 2 },
+//	{ 1, 4 }
+//};
+//
+//Matrix[] mb = new Matrix[3];
+//for(int i=0; i < mb.length; i++) {
+//	mb[i] = b[i].toRowMatrix();
+//}
+//		
+////WeightIO.save("b/", "bias", mb);
+//Matrix[] testmb = null;
+//try {
+//	testmb = WeightIO.load("b/", dims2);
+//} catch (IOException e) {
+//	// TODO Auto-generated catch block
+//	e.printStackTrace();
+//}
+//
+//Vector[] testb = new Vector[3];
+//for(int i=0; i < testb.length; i++) {
+//	testb[i] = testmb[i].toRowVector();
+//}
+//
+//for(int i=0; i<b.length; i++) {
+//	System.out.println(b[i]);
+//}
+//System.out.println();
+//for(int i=0; i<testb.length; i++) {
+//	System.out.println(testb[i]);
+//}
+
+//	Vector v = Vector.fromArray(new double[]{1, 2, 3});
+//	System.out.println(v);
+//	System.out.println();
+//	System.out.println(v.toRowMatrix());
+//	System.out.println();
+//	System.out.println(v.toRowMatrix().toRowVector());
+//	Matrix m1 = DenseMatrix.from2DArray(a1);
+	
+//	double[][] a11 = new double[][]{
+//		  { 1, 2, 3 },
+//		  { 4, 5, 6 }
+//	};
+//	
+//	Matrix m1 = DenseMatrix.from2DArray(a11);
+//	
+//	System.out.println(m1.toDenseMatrix().toArray().length);
+//	System.out.println(m1.toDenseMatrix().toArray()[0].length);
+		
+//	String[] test = {"Hi3", "Hi2", "Hi1"};
+//	Arrays.sort(test);
+//	System.out.println(Arrays.toString(test));
+	
+//	double threshold = 0.3;
+//	Random rand = new Random();
+//	double[] maskArr = new double[m1.rows()*m1.columns()];
+//	for (int i=0; i<m1.rows()*m1.columns(); i++) {
+//		if (rand.nextDouble() < threshold) {
+//			maskArr[i] = 0;
+//		} else {
+//			maskArr[i] = 1;
+//		}
+//	}
+//	System.out.println(Arrays.toString(maskArr));
+//	Matrix mask = Matrix.from1DArray(m1.rows(), m1.columns(), maskArr);
+//	System.out.println(mask);
 	
 	//DenseMatrix.from1DArray(1, 3, a1[rand.nextInt(3)]);
 //	System.out.println(DenseMatrix.from1DArray(1, 3, a1[rand.nextInt(3)]));

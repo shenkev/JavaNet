@@ -15,22 +15,33 @@ public class main {
 	 */
 	public static void main(String[] args) {
 		
-		// get data
-		double[][] Xarr = new double[][]{
-		  { -1, -1},
-		  { 1, -1 },
-		  { -1, 1 },
-		  { 1, 1 }
-		};	
-		
-		double[] yarr = new double[] {
-			-1,
-			1,
-			1,
-			-1
-		};
-		
-		Runners.NonStochastic(Xarr, yarr);
+		System.out.println("Hello");
+//		// get data
+//		double[][] Xarr = new double[][]{
+//		  { -1, -1},
+//		  { 1, -1 },
+//		  { -1, 1 },
+//		  { 1, 1 }
+//		};	
+//		
+//		double[][] yarr = new double[][] {
+//			{-1},
+//			{1},
+//			{1},
+//			{-1}
+//		};
+//		
+////		yarr = new double[][] {
+////			{-1},
+////			{1},
+////			{1},
+////			{-1}
+////		};
+//		
+//		Object[] dat = offlineTraining.loadOfflineDat();
+////		Xarr = (double[][])dat[0];
+////		yarr = (double[][])dat[1];
+//		Runners.NonStochastic(Xarr, yarr);
 	}
 }
 

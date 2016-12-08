@@ -6,6 +6,12 @@ import NeuralNet.NonLinFuncs.BipolarSigmoid;
 
 public class BipolarSigmoidDerivative implements MatrixFunction {
 
+	double multiple = 1;
+	
+	public BipolarSigmoidDerivative(double multiple) {
+		this.multiple = multiple;
+	}
+	
 	@Override
 	public double evaluate(int i, int j, double value) {
 		

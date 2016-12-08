@@ -19,9 +19,9 @@ public class RLRobot extends AdvancedRobot {
 	// ========================== Hyper Parameters ============================ //
    final double alpha = 0.3;
    final double gamma = 0.975;
-   final double epsilon = 0.3;
+   final double epsilon = 0.1;
    
-   final double rewardOnWin = 10.0;
+   final double rewardOnWin = 1.0;
 	
 	// ============================= Policies ================================= //
 
@@ -165,7 +165,7 @@ public class RLRobot extends AdvancedRobot {
    }
    
    public void onHitWall(HitWallEvent event) {
-	   double hitWallPenalty = 1.0;
+	   double hitWallPenalty = 0.1;
 	   
 	   LUT[previousStateIndex + currentActionIndex] = 
 			   (1.0 - alpha)*LUT[previousStateIndex + currentActionIndex]

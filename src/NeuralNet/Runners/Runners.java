@@ -10,6 +10,7 @@ import org.la4j.Matrix;
 import org.la4j.Vector;
 import org.la4j.matrix.DenseMatrix;
 
+import IO.WeightIO;
 import NeuralNet.NeuralNet;
 import NeuralNet.Costs.Loss;
 import NeuralNet.Costs.SquareLoss;
@@ -24,36 +25,36 @@ import NeuralNet.Optimizers.GradientDescent;
 import NeuralNet.Optimizers.Optimizer;
 
 public class Runners {
-	
+	static String folderPath = "./results/NNWeights/";
 /*
  * 
  */	
-	public static void NonStochastic(double[][] Xarr, double[] yarr) {
+	public static void NonStochastic(double[][] Xarr, double[][] yarr) {
 		
 		Matrix X = DenseMatrix.from2DArray(Xarr);
-		Matrix y = Vector.fromArray(yarr).toColumnMatrix();
+		Matrix y = DenseMatrix.from2DArray(yarr);
 	
 		// Setting batch size
-		int numberOfDataPoints = 4;
+		int numberOfDataPoints = Xarr.length;
 		int batchSize = numberOfDataPoints;
 		
 		// NN hyperparams
-		int noFeatures = 2;
-		int[] layerDims = new int[] { 4, 1 };
+		int noFeatures = Xarr[0].length;
+		int[] layerDims = new int[] { 4, yarr[0].length };
 		int noLayers = layerDims.length;
 		double trainRate = 0.2;
 		double momentum = 0.9;
-		NonLinFunction nonLinFunction = new ReLu();
-		NonLinFunction outputFunction = new BipolarSigmoid();
+		NonLinFunction nonLinFunction = new BipolarSigmoid(10);
+		NonLinFunction outputFunction = new BipolarSigmoid(10);
 		Loss lossFunc = new SquareLoss();
-		Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures);
+		Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures, 0);
 		int randSeed = 800;		
 
 		NeuralNet nn = new NeuralNet(noFeatures, batchSize, noLayers, layerDims, 
 				nonLinFunction, outputFunction, lossFunc, optimizer, randSeed);
 		nn.setDropout(1.0);
 		// training params
-		int iter = 1000;
+		int iter = 300;
 		int printPer = 1;
 		int convergedIteration = 0;
 		boolean converged = false;
@@ -106,7 +107,7 @@ public class Runners {
 			NonLinFunction nonLinFunction = new ReLu();
 			NonLinFunction outputFunction = new BipolarSigmoid();
 			Loss lossFunc = new SquareLoss();
-			Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures);
+			Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures, 0);
 			int randSeed = 800;	
 			
 			NeuralNet nn = new NeuralNet(noFeatures, batchSize, noLayers, layerDims, 
@@ -192,19 +193,8 @@ public class Runners {
  * 
  */
 	public static void BatchRun(double[][] Xarr, double[] yarr) {
-		Matrix X = DenseMatrix.from2DArray(Xarr);
-		Matrix y = Vector.fromArray(yarr).toColumnMatrix();
-		
-		// Running options
-//		boolean useBatching = false;
-//		int desiredBatchSize = 1;
-		
 		// Setting batch size
-		int numberOfDataPoints = 4;
-		int batchSize = numberOfDataPoints;
-//		if (useBatching) {
-//			batchSize = desiredBatchSize;
-//		}
+		int batchSize = 1;
 		
 		// NN hyperparams
 		int noFeatures = 2;
@@ -212,52 +202,90 @@ public class Runners {
 		int noLayers = layerDims.length;
 		double trainRate = 0.2;
 		double momentum = 0.9;
-		NonLinFunction nonLinFunction = new Sigmoid();
-		NonLinFunction outputFunction = new Tanh();
+		NonLinFunction nonLinFunction = new ReLu();
+		NonLinFunction outputFunction = new BipolarSigmoid();
 		Loss lossFunc = new SquareLoss();
-		Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures);
-		int randSeed = 800;
+		Optimizer optimizer = new GradientDescent(trainRate, momentum, noLayers, layerDims, noFeatures, 0);
+		int randSeed = 800;	
 		
 		NeuralNet nn = new NeuralNet(noFeatures, batchSize, noLayers, layerDims, 
 				nonLinFunction, outputFunction, lossFunc, optimizer, randSeed);
-
+		nn.setDropout(1.0);
 		// training params
 		int iter = 1000;
 		int printPer = 1;
 		int convergedIteration = 0;
 		boolean converged = false;
+		Random rand = new Random();
+
 		
 		// default use all data
-		Matrix X_batch = X;
-		Matrix y_batch = y;
-//		if (useBatching) {
-//			// randomly pick training batch
-//			int[] batchRows = generateBatch(batchSize, X.rows());
-//			X_batch = X.select(batchRows, generateZeroToNm1Array(X.columns()));
-//			y_batch = y.select(batchRows, generateZeroToNm1Array(y.columns()));
-//		}
+		Matrix X = DenseMatrix.from2DArray(Xarr);
+		Matrix y = Vector.fromArray(yarr).toColumnMatrix();
+		
+		double[] losses = new double[iter];
 		
 		for ( int i = 0; i < iter; i++ ) {
 			
-			 double loss = nn.runOnePass(X_batch, y_batch);
+			 int index = rand.nextInt(X.rows());
+			 Matrix X_batch = DenseMatrix.from1DArray(1, X.columns(), Xarr[index]);
+			 Matrix y_batch = Vector.fromArray(new double[]{yarr[index]}).toColumnMatrix();
 			
-			 if ( loss < 0.05 && converged == false ) {
-				 converged = true;
-				 convergedIteration = i;
-			 }
+			 double loss = nn.runOnePass(X_batch, y_batch);
+			 losses[i] = loss;
 			 
 			 if ( i % printPer == 0 ) {
-				 System.out.println( "Loss for iteration " + i + " is: " + loss );
+				 double totalLoss = stochasticLoss(nn, X, y, Xarr, yarr).loss;
+				 if ( totalLoss < 0.05 && converged == false ) {
+					 converged = true;
+					 convergedIteration = i;
+				 }
+				 System.out.println( "Loss for iteration " + i + " is: " + totalLoss );
 			 }
 		}
 		
-//		for (int i = 0; i < 4; i++) {
-//			System.out.println(nn.predict(X.getRow(i).toRowMatrix()));
-//		}
-//		nn.setBatchSize(numberOfDataPoints);
-		System.out.println(nn.predict(X));
-		System.out.println("Converged at iteration: " + convergedIteration);
+	   // save weights
+	   WeightIO.save(folderPath, "w/", "weight", nn.getW());
+	   
+	   // save biases
+	   Vector[] bb = nn.getb();
+	   Matrix[] mb = new Matrix[bb.length];
+	   for(int i=0; i < mb.length; i++) {
+	   	mb[i] = bb[i].toRowMatrix();
+	   }
+	   WeightIO.save(folderPath, "b/", "bias", mb);
 		
+		// Setting batch size
+		int batchSizeTest = 4;
+		
+		NeuralNet nnTest = new NeuralNet(noFeatures, batchSizeTest, noLayers, layerDims, 
+				nonLinFunction, outputFunction, lossFunc, optimizer, randSeed);
+		
+		try {
+			// load weights
+			nnTest.setW(WeightIO.load(folderPath, "w/", new int[][]{
+					{2, 4},
+					{4, 1}
+			}));
+			
+			// load biases
+			Matrix[] lmb;
+			lmb = WeightIO.load(folderPath, "b/", new int[][]{
+				{1, 4},
+				{1, 1}
+			});
+			Vector[] lbb = new Vector[lmb.length];
+			for(int i=0; i < lbb.length; i++) {
+				lbb[i] = lmb[i].toRowVector();
+			}
+			nnTest.setb(lbb);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		System.out.println(nnTest.predict(X));
+		System.out.println("Converged at iteration: " + convergedIteration);
 	}
 	
 //	public static int[] generateBatch(int size, int upper) {
